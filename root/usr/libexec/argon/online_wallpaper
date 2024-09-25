@@ -16,9 +16,9 @@ fetch_pic_url() {
     case $WEB_PIC_SRC in
     bing)
         local picpath=$(curl -fks --max-time 3 \
-            "https://www.bing.com/HPImageArchive.aspx?format=js&n=1" |
+            "https://cn.bing.com/HPImageArchive.aspx?format=js&n=1" |
             jsonfilter -qe '@.images[0].url')
-        [ -n "${picpath}" ] && echo "//www.bing.com${picpath}"
+        [ -n "${picpath}" ] && echo "//cn.bing.com${picpath}"
         ;;
     unsplash)
         if [ -z "$API_KEY" ]; then
