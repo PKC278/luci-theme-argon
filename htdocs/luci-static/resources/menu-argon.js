@@ -296,6 +296,9 @@ return baseclass.extend({
 		var menuContainer = E('ul', { 'class': level ? 'slide-menu' : 'nav' });
 		var children = ui.menu.getChildren(tree);
 
+		// List of menu items to hide
+		var hiddenMenuItems = ['attendedsysupgrade'];
+
 		// Don't render empty menus or menus deeper than 2 levels
 		if (children.length === 0 || currentLevel > 2) {
 			return E([]);
@@ -304,6 +307,12 @@ return baseclass.extend({
 		// Generate menu items for each child
 		for (var i = 0; i < children.length; i++) {
 			var child = children[i];
+			
+			// Skip hidden menu items
+			if (hiddenMenuItems.indexOf(child.name) !== -1) {
+				continue;
+			}
+			
 			var isActive = (
 				(L.env.dispatchpath[currentLevel] === child.name) && 
 				(L.env.dispatchpath[currentLevel - 1] === tree.name)
