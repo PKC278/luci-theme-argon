@@ -580,10 +580,23 @@
 }
 
 // Status - Overview
+[data-page=""],
 [data-page="admin-status"],
 [data-page="admin-status-overview"] {
     #view > div:first-child {
         gap: 0 !important;
+    }
+
+    #view > div:first-child {
+        display: block !important;
+    }
+
+    #view .cbi-section .cbi-title h3 {
+        height: 45px !important;
+    }
+
+    #view .cbi-section .cbi-title h3 > span.label[data-indicator="poll-status"] {
+        display: none !important;
     }
 }
 

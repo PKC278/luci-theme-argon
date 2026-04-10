@@ -1,0 +1,60 @@
+name: Build Package (tar.gz)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - "**.md"
+      - "Screenshots/**"
+      - ".github/ISSUE_TEMPLATE/**"
+
+env:
+  TZ: Asia/Shanghai
+
+jobs:
+  build:
+    name: Build tar.gz package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install less compiler
+        run: npm install -g less less-plugin-clean-css
+
+      - name: Compile LESS to CSS
+        run: |
+          lessc less/cascade.less htdocs/luci-static/argon/css/cascade.css --plugin=less-plugin-clean-css
+          lessc less/dark.less htdocs/luci-static/argon/css/dark.css --plugin=less-plugin-clean-css
+
+      - name: Assemble package structure
+        run: |
+          mkdir -p package/www package/usr/share/ucode/luci
+          cp -r htdocs/luci-static package/www/
+          cp -r ucode/template package/usr/share/ucode/luci/
+          cp -r root/* package/
+
+      - name: Get version
+        id: version
+        run: |
+          echo "filename=luci-theme-argon.tar.gz" >> $GITHUB_OUTPUT
+
+      - name: Create tar.gz
+        run: |
+          cd package
+          tar -czf ../${{ steps.version.outputs.filename }} .
+          cd ..
+          echo "Package contents:"
+          tar -tzf ${{ steps.version.outputs.filename }}
+
+      - name: Create or update release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: latest
+          name: luci-theme-argon
+          files: ${{ steps.version.outputs.filename }}
+          make_latest: true
