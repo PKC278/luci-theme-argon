@@ -1,2 +1,4 @@
 Screenshots
 .DS_Store
+.vscode
+htdocs/luci-static/argon/css
