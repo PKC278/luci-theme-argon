@@ -1,0 +1,91 @@
+name: Build Package (tar.gz)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - "**.md"
+      - "Screenshots/**"
+      - ".github/ISSUE_TEMPLATE/**"
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    uses: ./.github/workflows/check.yml
+
+  build:
+    name: Build tar.gz package
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Assemble package structure
+        run: |
+          mkdir -p package/www package/usr/share/ucode/luci
+          cp -r htdocs/luci-static package/www/
+          cp -r ucode/template package/usr/share/ucode/luci/
+          cp -r root/* package/
+
+      - name: Drop the configuration interface
+        # The tarball distributes appearance only. The settings page, online
+        # wallpaper, branding upload and theme updater need rpcd services and
+        # release feeds, so their files stay out of this artifact.
+        run: |
+          rm -rf package/usr/share/luci/menu.d/luci-app-argon-config.json \
+                 package/usr/share/rpcd/acl.d/luci-app-argon-config.json \
+                 package/usr/share/argon \
+                 package/lib/upgrade/keep.d/luci-argon-branding \
+                 package/usr/libexec/rpcd/luci.argon \
+                 package/usr/libexec/rpcd/luci.argon_branding \
+                 package/usr/libexec/rpcd/luci.argon_update \
+                 package/usr/libexec/rpcd/luci.argon_wallpaper \
+                 package/www/luci-static/resources/view/argon-config.js \
+                 package/www/luci-static/resources/argon/branding.js \
+                 package/www/luci-static/resources/argon/updates.js \
+                 package/www/luci-static/resources/argon-config
+
+      - name: Drop the appearance switch
+        # The artifact always follows the system colour scheme, so the header
+        # switch, its RPC and the per-page module stay out of the tarball.
+        run: |
+          rm -f package/www/luci-static/resources/argon-appearance.js \
+                package/usr/libexec/rpcd/luci.argon_appearance \
+                package/usr/share/rpcd/acl.d/luci-theme-argon.json
+          sed -i '/id="argon-appearance" hidden/d' \
+                 package/usr/share/ucode/luci/template/themes/argon/header.ut
+          sed -i "/L.require('argon-appearance');/d" \
+                 package/usr/share/ucode/luci/template/themes/argon/page_scripts.ut
+          # Fail loudly if upstream renames the markup these edits rely on.
+          ! grep -q 'argon-appearance' \
+                 package/usr/share/ucode/luci/template/themes/argon/header.ut
+          ! grep -q 'argon-appearance' \
+                 package/usr/share/ucode/luci/template/themes/argon/page_scripts.ut
+
+      - name: Get version
+        id: version
+        run: |
+          echo "filename=luci-theme-argon.tar.gz" >> $GITHUB_OUTPUT
+
+      - name: Create tar.gz
+        run: |
+          cd package
+          tar -czf ../${{ steps.version.outputs.filename }} .
+          cd ..
+          echo "Package contents:"
+          tar -tzf ${{ steps.version.outputs.filename }}
+
+      - name: Create or update release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: latest
+          name: luci-theme-argon
+          files: ${{ steps.version.outputs.filename }}
+          make_latest: true

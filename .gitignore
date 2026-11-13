@@ -24,6 +24,7 @@ __pycache__/
 *.apk
 
 # OS and editor temporary files
+.vscode/
 .DS_Store
 *~
 *.swp
